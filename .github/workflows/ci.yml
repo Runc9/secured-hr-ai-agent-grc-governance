@@ -1,0 +1,14 @@
+name: GRC Governance CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+
+jobs:
+  policy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Policy Tests
+        run: echo "Placeholder for conftest / OPA policy checks"

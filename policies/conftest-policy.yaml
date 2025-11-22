@@ -1,0 +1,34 @@
+# Conftest configuration for Secured HR AI Agent governance
+# This links OPA Rego policies to CI checks.
+
+policy:
+  # Directory where Rego policies live
+  - policies
+
+input:
+  # Conftest will scan these file types and provide structured input
+  # when possible. Mixed file governance is enabled.
+  type: "yaml"
+
+files:
+  # Scan all YAML and JSON configs that might declare identity,
+  # tools, data sources, logging, or prompts.
+  - "**/*.yml"
+  - "**/*.yaml"
+  - "**/*.json"
+
+exclude:
+  # Do not scan evidence outputs or git internals
+  - "evidence/**"
+  - ".git/**"
+  - ".github/**"
+
+namespaces:
+  # Rego package namespace expected in opa-policies.rego
+  - "secured_hr_agent.governance"
+
+fail_on_warnings: true
+
+output:
+  # Produce a readable output in CI logs
+  format: "table"

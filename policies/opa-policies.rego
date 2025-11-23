@@ -99,7 +99,7 @@ deny[msg] {
   perms := get_list(input, "permissions")
   some p
   p := lower(perms[_])
-  p == "all" or p == "admin" or p == "owner"
+  (p == "all" or p == "admin" or p == "owner")
   msg := sprintf("Broad permission detected: %v. Use least privilege.", [p])
 }
 

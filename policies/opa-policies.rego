@@ -4,7 +4,7 @@ package secured_hr_agent.governance
 # Enforces least privilege, tool allowlist, classification boundaries,
 # PII protection, and observability requirements.
 
-default deny := []
+default deny := {}
 
 ############################
 # Forbidden data sources

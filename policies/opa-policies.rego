@@ -28,20 +28,24 @@ forbidden_keywords := {
 
 deny contains msg if {
   data_sources := get_list(input, "data_sources")
-  some ds
-  ds := data_sources[_]
-  some kw
-  kw := forbidden_keywords[_]
+  some i
+  ds := data_sources[i]
+
+  some j
+  kw := forbidden_keywords[j]
+
   contains(lower(ds), kw)
   msg := sprintf("Forbidden data source detected: %v contains %v", [ds, kw])
 }
 
 deny contains msg if {
   views := get_list(input, "views")
-  some v
-  v := views[_]
-  some kw
-  kw := forbidden_keywords[_]
+  some i
+  v := views[i]
+
+  some j
+  kw := forbidden_keywords[j]
+
   contains(lower(v), kw)
   msg := sprintf("Forbidden view detected: %v contains %v", [v, kw])
 }
@@ -62,8 +66,9 @@ allowed_tools := {
 
 deny contains msg if {
   tools := get_list(input, "tools")
-  some t
-  t := tools[_]
+  some i
+  t := tools[i]
+
   not allowed_tools[t]
   msg := sprintf("Tool not allowlisted: %v", [t])
 }
@@ -86,8 +91,9 @@ deny contains msg if {
 
 deny contains msg if {
   perms := get_list(input, "permissions")
-  some p
-  p := lower(perms[_])
+  some i
+  p := lower(perms[i])
+
   {"all", "admin", "owner"}[p]
   msg := sprintf("Broad permission detected: %v. Use least privilege.", [p])
 }
@@ -107,8 +113,9 @@ deny contains msg if {
 
 deny contains msg if {
   docs := get_list(input, "documents")
-  some d
-  d := docs[_]
+  some i
+  d := docs[i]
+
   cls := lower(get_string(d, "classification"))
   cls == "restricted"
   msg := sprintf("Restricted document declared in agent scope: %v", [d])
@@ -133,8 +140,10 @@ required_log_fields := {
 deny contains msg if {
   log_cfg := get_object(input, "logging")
   log_fields := get_list(log_cfg, "fields")
-  some f
-  f := required_log_fields[_]
+
+  some i
+  f := required_log_fields[i]
+
   not contains_list(log_fields, f)
   msg := sprintf("Logging field missing: %v", [f])
 }
@@ -146,8 +155,10 @@ deny contains msg if {
 deny contains msg if {
   sp := lower(get_string(input, "system_prompt"))
   sp != ""
-  some kw
-  kw := forbidden_keywords[_]
+
+  some i
+  kw := forbidden_keywords[i]
+
   contains(sp, kw)
   msg := sprintf("System prompt contains forbidden topic keyword: %v", [kw])
 }

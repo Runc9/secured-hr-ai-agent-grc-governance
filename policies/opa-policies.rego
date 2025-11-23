@@ -1,21 +1,15 @@
 package secured_hr_agent.governance
 
-# Secured HR AI Agent Governance Policies
-# Purpose:
-# - Enforce least privilege
-# - Block restricted and PII data access
-# - Enforce tool allowlist usage
-# - Require observability fields
-# These rules are designed to work with mixed file inputs
-# from YAML, JSON, and other structured configs.
+# Rego v1 compatible policies for Secured HR AI Agent governance.
+# Enforces least privilege, tool allowlist, classification boundaries,
+# PII protection, and observability requirements.
 
-default deny = []
+default deny := []
 
 ############################
-# 1. Forbidden data sources
+# Forbidden data sources
 ############################
 
-# Disallowed keywords that must never appear in allowed sources, tools, or prompts.
 forbidden_keywords := {
   "ssn",
   "social security",
@@ -24,7 +18,7 @@ forbidden_keywords := {
   "home address",
   "personal phone",
   "disciplinary",
-  "pip",                 # performance improvement plan
+  "pip",
   "performance improvement",
   "payroll",
   "health record",
@@ -32,31 +26,30 @@ forbidden_keywords := {
   "restricted_hr"
 }
 
-# Deny if a structured config declares a forbidden data source.
-deny[msg] {
-  some ds
+deny contains msg if {
   data_sources := get_list(input, "data_sources")
+  some ds
   ds := data_sources[_]
+  some kw
   kw := forbidden_keywords[_]
   contains(lower(ds), kw)
   msg := sprintf("Forbidden data source detected: %v contains %v", [ds, kw])
 }
 
-# Deny if a structured config declares forbidden views.
-deny[msg] {
-  some v
+deny contains msg if {
   views := get_list(input, "views")
+  some v
   v := views[_]
+  some kw
   kw := forbidden_keywords[_]
   contains(lower(v), kw)
   msg := sprintf("Forbidden view detected: %v contains %v", [v, kw])
 }
 
-#################################
-# 2. Tool allowlist enforcement
-#################################
+############################
+# Tool allowlist enforcement
+############################
 
-# Allowed tool names for company wide HR agent.
 allowed_tools := {
   "search_hr_policies",
   "get_benefits_summary",
@@ -67,35 +60,31 @@ allowed_tools := {
   "get_hr_help_resources"
 }
 
-# Deny if config declares any tool not in the allowlist.
-deny[msg] {
-  some t
+deny contains msg if {
   tools := get_list(input, "tools")
+  some t
   t := tools[_]
   not allowed_tools[t]
   msg := sprintf("Tool not allowlisted: %v", [t])
 }
 
 ###############################################
-# 3. Identity and least privilege constraints
+# Identity and least privilege constraints
 ###############################################
 
-# Deny if agent identity is missing in structured config.
-deny[msg] {
+deny contains msg if {
   id := get_string(input, "identity")
   id == ""
   msg := "Agent identity is required and must be a service principal style identity"
 }
 
-# Deny if identity looks like a human email.
-deny[msg] {
+deny contains msg if {
   id := lower(get_string(input, "identity"))
   contains(id, "@")
   msg := sprintf("Human identity detected. Use a service principal. identity=%v", [id])
 }
 
-# Deny if config grants admin or broad permissions.
-deny[msg] {
+deny contains msg if {
   perms := get_list(input, "permissions")
   some p
   p := lower(perms[_])
@@ -104,22 +93,19 @@ deny[msg] {
 }
 
 ###############################################
-# 4. Classification and PII handling
+# Classification and PII handling
 ###############################################
 
-# Allowed classification levels.
 allowed_classifications := {"public", "internal"}
 
-# Deny if any declared classification is restricted.
-deny[msg] {
+deny contains msg if {
   cls := lower(get_string(input, "classification"))
   cls != ""
   not allowed_classifications[cls]
   msg := sprintf("Restricted classification not allowed for agent access: %v", [cls])
 }
 
-# Deny if a document is marked restricted in metadata.
-deny[msg] {
+deny contains msg if {
   docs := get_list(input, "documents")
   some d
   d := docs[_]
@@ -129,7 +115,7 @@ deny[msg] {
 }
 
 ###############################################
-# 5. Observability requirements
+# Observability requirements
 ###############################################
 
 required_log_fields := {
@@ -144,8 +130,7 @@ required_log_fields := {
   "latency_ms"
 }
 
-# Deny if logging config is missing required fields.
-deny[msg] {
+deny contains msg if {
   log_cfg := get_object(input, "logging")
   log_fields := get_list(log_cfg, "fields")
   some f
@@ -155,46 +140,46 @@ deny[msg] {
 }
 
 ###############################################
-# 6. Prompt safety checks (structured prompts)
+# Prompt safety checks
 ###############################################
 
-# Deny if system prompt contains forbidden keywords.
-deny[msg] {
+deny contains msg if {
   sp := lower(get_string(input, "system_prompt"))
   sp != ""
+  some kw
   kw := forbidden_keywords[_]
   contains(sp, kw)
   msg := sprintf("System prompt contains forbidden topic keyword: %v", [kw])
 }
 
 ###############################################
-# Helper functions
+# Helper functions (Rego v1)
 ###############################################
 
-get_list(obj, key) = out {
+get_list(obj, key) = out if {
   val := obj[key]
   is_array(val)
   out := val
-} else = [] {
+} else = [] if {
   true
 }
 
-get_string(obj, key) = out {
+get_string(obj, key) = out if {
   val := obj[key]
   is_string(val)
   out := val
-} else = "" {
+} else = "" if {
   true
 }
 
-get_object(obj, key) = out {
+get_object(obj, key) = out if {
   val := obj[key]
   is_object(val)
   out := val
-} else = {} {
+} else = {} if {
   true
 }
 
-contains_list(arr, item) {
+contains_list(arr, item) if {
   arr[_] == item
 }
